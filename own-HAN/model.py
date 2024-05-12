@@ -47,25 +47,31 @@ class SentenceLevel(nn.Module):
         attention_scores = F.softmax(attention_scores, dim=0)  # Áp dụng softmax
 
         # Tính tổng có trọng số của glove vectors
-        sentence_representation = torch.sum(attention_scores * output, dim=0)  # Shape: (hidden_size,)
+        document_representation = torch.sum(attention_scores * output, dim=0)  # Shape: (hidden_size,)
 
-        return sentence_representation
+        return document_representation
 
 class HierarchicalAttentionNetwork(nn.Module):
-    def __init__(self, embedding_dim, hidden_gru_dim):
+    def __init__(self, word_embedding, embedding_dim, hidden_gru_dim):
         super(HierarchicalAttentionNetwork, self).__init__()
+        self.embedding = nn.Embedding(len(word_embedding), embedding_dim)
+        self.embedding.weight.data.copy_(torch.tensor(word_embedding))
         self.word_level = WordLevel(embedding_dim, hidden_gru_dim)
         self.sentence_level = SentenceLevel(hidden_gru_dim*2, hidden_gru_dim)
-        self.classifier = nn.Linear(hidden_gru_dim*2, 1)
+        self.fc1 = nn.Linear(hidden_gru_dim*2, hidden_gru_dim *2)
+        self.fc2 = nn.Linear(hidden_gru_dim*2, 1)
 
     def forward(self,input):
         s = []
         for x in input:
-            print(x)
+            x = self.embedding(torch.tensor(x))
             s.append(self.word_level(x))
+        
         s = torch.stack(s, dim=0)
         v = self.sentence_level(s)
-        return self.classifier(v)
+        v = self.fc1(v)
+        v = self.fc2(v)
+        return v
         
 
 if __name__ == '__main__':

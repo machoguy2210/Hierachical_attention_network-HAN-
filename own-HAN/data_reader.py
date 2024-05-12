@@ -8,7 +8,7 @@ class DataReader:
         self.num_classes = num_classes
 
         self.train_data = self._read_data(train_file)
-        self.test_data = self._read_data(test_file)
+        #self.test_data = self._read_data(test_file)
 
     def _read_data(self, file_path):
         print('Reading data from %s' % file_path)
