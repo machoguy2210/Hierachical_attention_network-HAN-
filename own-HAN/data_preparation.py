@@ -41,7 +41,7 @@ def build_vocab(docs,save_path):
 def process_and_save(word_to_index, data, out_file):
     mapped_data = []
     for label, doc in zip(data[0],data[1]):
-        mapped_doc = [[word_to_index.get(word, 1) for word in remove_punctuation(sent).lower().split()] for sent in doc.split('.') if sent != '']
+        mapped_doc = [[word_to_index.get(word, 1) for word in remove_punctuation(sent).lower().split() if word != '' and word != []] for sent in doc.split('.') if sent != '' and sent != []]
         mapped_data.append((label, mapped_doc))
 
     with open(out_file, 'wb') as f:
@@ -49,6 +49,8 @@ def process_and_save(word_to_index, data, out_file):
 
 if __name__ == '__main__': 
     train_data = read_data('train_data/train.csv')
+    test_data = read_data('train_data/test.csv')
     word_to_index =  build_vocab(train_data[1], 'train_data/vocab')
     process_and_save(word_to_index, train_data, 'train_data/train.pkl')
+    process_and_save(word_to_index,test_data, 'train_data/test.pkl')
     
