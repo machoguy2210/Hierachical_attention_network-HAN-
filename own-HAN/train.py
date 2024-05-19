@@ -2,54 +2,44 @@ from model import HierarchicalAttentionNetwork as HAN
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from utils import read_vocab, load_glove
+from utils import read_vocab, load_glove, read_data
 import pickle 
+from sklearn.model_selection import train_test_split
+
 
 if __name__ == '__main__':
     embedding_dim = 200
     hidden_dim = 50
-    num_classes = 2
-    device = "cuda" if torch.cuda.is_available() else "cpu"
+    num_classes = 5
 
     # Load the vocabulary
     vocab = read_vocab('train_data/vocab-w2i.pkl')
     word_embedding = load_glove('glove.6B/glove.6B.200d.txt', 200, vocab)
 
-    # Example usage
-    vocab_size = len(word_embedding)  # Replace with the actual vocab size
-    
+
+
     # Initialize the HAN model
     HAN_model = HAN(word_embedding, embedding_dim, hidden_dim)
 
     #Load the train/test data
-    with open('train_data/train.pkl', 'rb') as f:
-        train_data = pickle.load(f)
+    data = read_data('train_data/data.pkl', num_classes=num_classes)
 
-    with open('train_data/test.pkl', 'rb') as f:
-        test_data = pickle.load(f)
+    train_data, test_data = train_test_split(data, test_size=0.2, random_state=42)
+    print('Train data size: {}'.format(len(train_data)))
+    print('Test data size: {}'.format(len(test_data)))
 
     optimizer = optim.SGD(HAN_model.parameters(), lr=0.01)
-    criterion = nn.BCEWithLogitsLoss()
+    criterion = nn.CrossEntropyLoss()
 
     num_epochs = 1
-    count = 0
     for epoch in range(num_epochs):
-        for target, input in (train_data):
-            try:
-                optimizer.zero_grad()
-                output = HAN_model(input)
-                target = torch.tensor([target-1]).float()
-                loss = criterion(output, target)
-                loss.backward()
-                optimizer.step()
-                count += 1
-            except Exception as e:
-                print(count)
-            
-            
-
-        print('Epoch: {}, Loss: {}'.format(epoch, loss.item()))
-
+        for inputs,target in (train_data):
+            optimizer.zero_grad()
+            output = HAN_model(inputs).unsqueeze(0)
+            target = torch.tensor([target])
+            loss = criterion(output, target)
+            loss.backward()
+            optimizer.step()
 
     # Test the model
     HAN_model.eval()
@@ -58,13 +48,13 @@ if __name__ == '__main__':
 
     with torch.no_grad():
         for target, input in (test_data):
-            output = HAN_model(input)
-            predicted = torch.argmax(output)
-            total += 1
-            if predicted == target-1:
-                correct += 1
+            output = HAN_model(input).unsqueeze(0)
+            target = torch.tensor([target])
+            _, predicted = torch.max(output, 1)
+            total += target.size(0)
+            correct += (predicted == target).sum().item()
         
-    
+
     print('Accuracy: {}'.format(correct/total))
 
 

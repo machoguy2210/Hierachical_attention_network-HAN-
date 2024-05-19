@@ -1,5 +1,6 @@
 import pickle
 import numpy as np
+import random
 
 def read_vocab(vocab_file):
   print('Loading vocabulary ...')
@@ -31,3 +32,17 @@ def load_glove(glove_file, emb_size, vocab):
             oov_count += 1
     print('Number of OOV words: %d' % oov_count)
     return embedding_matrix
+
+def read_data(file_path, num_classes=5):        
+        print('Reading data from %s' % file_path)
+        new_data = []
+        with open(file_path, 'rb') as f:
+            data = pickle.load(f)
+            random.shuffle(data)
+            for label, doc in data:
+                label -= 1
+                assert label >= 0 and label < num_classes
+
+                new_data.append((doc, label))
+
+        return new_data
